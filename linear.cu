@@ -77,7 +77,7 @@ float hash(float *x) {
     return sum;
 }
 
-float *forward_linear(float *x_ND, float *w_CD, float *o_NC, int num) {
+void cpu_forward(float *x_ND, float *w_CD, float *o_NC, int num) {
     for (int n = 0; n < num; n++) {
         for (int c = 0; c < CLASSES; c++) {
             int idx = CLASSES * n + c;
@@ -87,7 +87,6 @@ float *forward_linear(float *x_ND, float *w_CD, float *o_NC, int num) {
             }
         }
     }
-    return o_NC;
 }
 
 float *softmax(float *o_NC, int num) {
@@ -199,7 +198,7 @@ float *fit_linear(float *x_ND, long *y_N) {
 
     struct timespec start, end;
     double elapsed;
-    int steps = 1000;
+    int steps = 100;
     for (int step = 0; step < steps; step++) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -277,7 +276,7 @@ float *fit_linear(float *x_ND, long *y_N) {
 
 int eval_linear(float *w_CD, float *x_MD, long *y_M) {
     float *o_MC = (float *)malloc(N_TEST*CLASSES*sizeof(float));
-    forward_linear(x_MD, w_CD, o_MC, N_TEST);
+    cpu_forward(x_MD, w_CD, o_MC, N_TEST);
     int correct = 0;
     for (int m = 0; m < N_TEST; m++) {
         int max_i = 0;
