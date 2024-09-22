@@ -108,6 +108,7 @@ const float ETA = 0.01/N_TRAIN;
 float *fit_linear(float *x_ND, long *y_N) {
 
     cudaError_t err;
+    size_t size;
 
     struct timespec start, end;
     double elapsed;
@@ -124,9 +125,9 @@ float *fit_linear(float *x_ND, long *y_N) {
         for (int d = 0; d < DIM; d++)
             w_CD[c*DIM+d] = 0;
 
-    size_t size = N_TRAIN*DIM*sizeof(float);
     float *xc_ND;
-    err = cudaMalloc((void**)&xc_ND, N_TRAIN*DIM*sizeof(float));
+    size = N_TRAIN*DIM*sizeof(float);
+    err = cudaMalloc((void**)&xc_ND, size);
     if (err != cudaSuccess) {
         fprintf(stderr, "Failed to allocate device memory for C (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
@@ -138,7 +139,8 @@ float *fit_linear(float *x_ND, long *y_N) {
     }
 
     float *wc_CD;
-    err = cudaMalloc((void**)&wc_CD, CLASSES*DIM*sizeof(float));
+    size = CLASSES*DIM*sizeof(float);
+    err = cudaMalloc((void**)&wc_CD, size);
     if (err != cudaSuccess) {
         fprintf(stderr, "Failed to allocate device memory for C (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
