@@ -39,7 +39,7 @@ unsigned char* read_data(char *path) {
 const int DIM = 3*32*32;
 const int CLASSES = 10;
 //const int N_TRAIN = 50000;
-const int N_TRAIN = 1000;
+const int N_TRAIN = 5000;
 const int N_TEST = 10000;
 
 float *forward_linear(float *x_ND, float *w_CD, int num) {
@@ -113,7 +113,7 @@ float *fit_linear(float *x_ND, long *y_N) {
         }
     }
 
-    float eta = 0.03/N_TRAIN;
+    float eta = 0.02/N_TRAIN;
 
     // Allocate weight: 10 x (3x32x32)
     float *w_CD = (float *)malloc(CLASSES*DIM*sizeof(float));
@@ -123,7 +123,7 @@ float *fit_linear(float *x_ND, long *y_N) {
 
     float *deltaT_CN = (float *)malloc(CLASSES*N_TRAIN*sizeof(float));
 
-    int steps = 20;
+    int steps = 200;
     for (int step = 0; step < steps; step++) {
 
         struct timespec start, end;
