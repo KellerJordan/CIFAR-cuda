@@ -132,7 +132,7 @@ float *fit_linear(float *x_ND, long *y_N) {
         fprintf(stderr, "Failed to allocate device memory for C (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
     }
-    err = cudaMemcpy(x_ND, xc_ND, size, cudaMemcpyHostToDevice);
+    err = cudaMemcpy(xc_ND, x_ND, size, cudaMemcpyHostToDevice);
     if (err != cudaSuccess) {
         fprintf(stderr, "Failed to copy vector C from host to device (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
@@ -145,7 +145,7 @@ float *fit_linear(float *x_ND, long *y_N) {
         fprintf(stderr, "Failed to allocate device memory for C (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
     }
-    err = cudaMemcpy(x_ND, xc_ND, size, cudaMemcpyHostToDevice);
+    err = cudaMemcpy(wc_CD, w_CD, size, cudaMemcpyHostToDevice);
     if (err != cudaSuccess) {
         fprintf(stderr, "Failed to copy vector C from host to device (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
