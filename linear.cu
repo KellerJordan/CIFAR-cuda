@@ -189,7 +189,6 @@ float *fit_linear(float *x_ND, long *y_N) {
 
         free(u_CD);
 
-        free(o_NC);
         free(p_NC);
         free(delta_NC);
 
@@ -201,9 +200,12 @@ float *fit_linear(float *x_ND, long *y_N) {
         printf("Step: %d, Loss: %f\n", step, loss/N_TRAIN);
     }
 
+
     free(xT_DN);
+    free(o_NC);
     cudaFree(xc_ND);
     cudaFree(wc_CD);
+    cudaFree(oc_NC);
 
     return w_CD;
 }
