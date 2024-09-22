@@ -172,7 +172,7 @@ float *fit_linear(float *x_ND, long *y_N) {
     }
     float *o_NC = (float *)malloc(size);
 
-    int steps = 20;
+    int steps = 2;
     for (int step = 0; step < steps; step++) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -195,6 +195,7 @@ float *fit_linear(float *x_ND, long *y_N) {
                 exit(EXIT_FAILURE);
             }
         }
+        printf("%f %f %f %f %f\n", o_NC[0], o_NC[1], o_NC[2], o_NC[3], o_NC[4]);
 
         float *p_NC = softmax(o_NC, N_TRAIN);
         float *delta_NC = sub(one_hot(y_N, N_TRAIN), p_NC, N_TRAIN*CLASSES);
@@ -216,6 +217,13 @@ float *fit_linear(float *x_ND, long *y_N) {
         for (int c = 0; c < CLASSES; c++)
             for (int d = 0; d < DIM; d++)
                 w_CD[c*DIM+d] += ETA * u_CD[c*DIM+d];
+
+        size = CLASSES*DIM*sizeof(float);
+        err = cudaMemcpy(wc_CD, w_CD, size, cudaMemcpyHostToDevice);
+        if (err != cudaSuccess) {
+            fprintf(stderr, "Failed to copy vector C from host to device (error code %s)!\n", cudaGetErrorString(err));
+            exit(EXIT_FAILURE);
+        }
 
         free(u_CD);
 

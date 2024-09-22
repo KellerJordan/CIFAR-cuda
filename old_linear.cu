@@ -42,8 +42,9 @@ const int N_TRAIN = 50000;
 //const int N_TRAIN = 5000;
 const int N_TEST = 10000;
 
-float *forward_linear(float *x_ND, float *w_CD, int num) {
-    float *o_NC = (float *)malloc(num*CLASSES*sizeof(float));
+float *forward_linear(float *x_ND, float *w_CD, float *o_NC, int num) {
+    printf("%ld\n", num*CLASSES*sizeof(float));
+    //float *o_NC = (float *)malloc(num*CLASSES*sizeof(float));
     for (int n = 0; n < num; n++) {
         for (int c = 0; c < CLASSES; c++) {
             int idx = CLASSES * n + c;
@@ -122,12 +123,22 @@ float *fit_linear(float *x_ND, long *y_N) {
         for (int d = 0; d < DIM; d++)
             w_CD[c*DIM+d] = 0;
 
+    size_t size = N_TRAIN*CLASSES*sizeof(float);
+    printf("%ld\n", size);
+    float *o_NC = (float *)malloc(size);
+
     int steps = 20;
     for (int step = 0; step < steps; step++) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
 
-        float *o_NC = forward_linear(x_ND, w_CD, N_TRAIN);
+        o_NC = forward_linear(x_ND, w_CD, o_NC, N_TRAIN);
+
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        elapsed = (end.tv_sec - start.tv_sec);
+        elapsed += (end.tv_nsec - start.tv_nsec) / 1e9;
+        printf("Time elapsed: %.6f seconds\n", elapsed);
+        clock_gettime(CLOCK_MONOTONIC, &start);
 
         float *p_NC = softmax(o_NC, N_TRAIN);
         float *delta_NC = sub(one_hot(y_N, N_TRAIN), p_NC, N_TRAIN*CLASSES);
@@ -152,7 +163,6 @@ float *fit_linear(float *x_ND, long *y_N) {
 
         free(u_CD);
 
-        free(o_NC);
         free(p_NC);
         free(delta_NC);
 
@@ -165,12 +175,13 @@ float *fit_linear(float *x_ND, long *y_N) {
     }
 
     free(xT_DN);
+    free(o_NC);
 
     return w_CD;
 }
 
 int eval_linear(float *w_CD, float *x_MD, long *y_M) {
-    float *o_MC = forward_linear(x_MD, w_CD, N_TEST);
+    float *o_MC;
     int correct = 0;
     for (int m = 0; m < N_TEST; m++) {
         int max_i = 0;
