@@ -6,8 +6,8 @@
 
 const int DIM = 3*32*32;
 const int CLASSES = 10;
-//const int N_TRAIN = 50000;
-const int N_TRAIN = 500;
+const int N_TRAIN = 50000;
+//const int N_TRAIN = 500;
 const int N_TEST = 10000;
 
 __global__ void cuda_forward(float *x_ND, float *w_CD, float *o_NC) {
@@ -205,22 +205,15 @@ float *fit_linear(float *x_ND, long *y_N) {
         float *delta_NC = sub(one_hot(y_N, N_TRAIN), p_NC, N_TRAIN*CLASSES);
         float loss = cross_entropy(p_NC, y_N, N_TRAIN);
 
-        float *u_CD = (float *)malloc(CLASSES*DIM*sizeof(float));
-        for (int c = 0; c < CLASSES; c++)
-            for (int d = 0; d < DIM; d++)
-                u_CD[c*DIM+d] = 0;
-
         for (int c = 0; c < CLASSES; c++) {
             for (int d = 0; d < DIM; d++) {
+                float u = 0;
                 for (int n = 0; n < N_TRAIN; n++) {
-                    u_CD[c*DIM+d] += delta_NC[n*CLASSES+c] * xT_DN[d*N_TRAIN+n];
-                    //u_CD[c*DIM+d] += delta_NC[n*CLASSES+c] * x_ND[n*DIM+d]; // 6x slower bc of bad memory access pattern
+                    u += delta_NC[n*CLASSES+c] * xT_DN[d*N_TRAIN+n];
                 }
+                w_CD[c*DIM+d] += ETA * u;
             }
         }
-        for (int c = 0; c < CLASSES; c++)
-            for (int d = 0; d < DIM; d++)
-                w_CD[c*DIM+d] += ETA * u_CD[c*DIM+d];
 
         size = CLASSES*DIM*sizeof(float);
         err = cudaMemcpy(wc_CD, w_CD, size, cudaMemcpyHostToDevice);
@@ -228,8 +221,6 @@ float *fit_linear(float *x_ND, long *y_N) {
             fprintf(stderr, "Failed to copy vector C from host to device (error code %s)!\n", cudaGetErrorString(err));
             exit(EXIT_FAILURE);
         }
-
-        free(u_CD);
 
         free(p_NC);
         free(delta_NC);
