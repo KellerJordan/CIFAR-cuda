@@ -6,8 +6,8 @@
 
 const int DIM = 3*32*32;
 const int CLASSES = 10;
-const int N_TRAIN = 50000;
-//const int N_TRAIN = 5000;
+//const int N_TRAIN = 50000;
+const int N_TRAIN = 500;
 const int N_TEST = 10000;
 
 __global__ void cuda_forward(float *x_ND, float *w_CD, float *o_NC) {
@@ -53,6 +53,14 @@ unsigned char* read_data(const char path[]) {
     fclose(file);
 
     return buffer;
+}
+
+float hash(float *x) {
+    float sum = 0;
+    for (int i = 0; i < 1000; i+=2) {
+        sum += abs(x[i]);
+    }
+    return sum;
 }
 
 float *forward_linear(float *x_ND, float *w_CD, float *o_NC, int num) {
@@ -172,30 +180,26 @@ float *fit_linear(float *x_ND, long *y_N) {
     }
     float *o_NC = (float *)malloc(size);
 
-    int steps = 2;
+    int steps = 200;
     for (int step = 0; step < steps; step++) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
 
-        if (0) {
-            forward_linear(x_ND, w_CD, o_NC, N_TRAIN);
-        } else{
-            int N = N_TRAIN*CLASSES;
-            int threadsPerBlock = 1024;
-            int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
-            cuda_forward<<<blocksPerGrid, threadsPerBlock>>>(xc_ND, wc_CD, oc_NC);
-            err = cudaGetLastError();
-            if (err != cudaSuccess) {
-                fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(err));
-                exit(EXIT_FAILURE);
-            }
-            err = cudaMemcpy(o_NC, oc_NC, size, cudaMemcpyDeviceToHost);
-            if (err != cudaSuccess) {
-                fprintf(stderr, "Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(err));
-                exit(EXIT_FAILURE);
-            }
+        int N = N_TRAIN*CLASSES;
+        int threadsPerBlock = 1024;
+        int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+        cuda_forward<<<blocksPerGrid, threadsPerBlock>>>(xc_ND, wc_CD, oc_NC);
+        err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(err));
+            exit(EXIT_FAILURE);
         }
-        printf("%f %f %f %f %f\n", o_NC[0], o_NC[1], o_NC[2], o_NC[3], o_NC[4]);
+        size = N_TRAIN*CLASSES*sizeof(float);
+        err = cudaMemcpy(o_NC, oc_NC, size, cudaMemcpyDeviceToHost);
+        if (err != cudaSuccess) {
+            fprintf(stderr, "Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(err));
+            exit(EXIT_FAILURE);
+        }
 
         float *p_NC = softmax(o_NC, N_TRAIN);
         float *delta_NC = sub(one_hot(y_N, N_TRAIN), p_NC, N_TRAIN*CLASSES);
