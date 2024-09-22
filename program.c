@@ -39,7 +39,7 @@ unsigned char* read_data(char *path) {
 const int DIM = 3*32*32;
 const int CLASSES = 10;
 //const int N_TRAIN = 50000;
-const int N_TRAIN = 5;
+const int N_TRAIN = 500;
 const int N_TEST = 10000;
 
 float *forward_linear(float *x_ND, float *w_CD, int num) {
@@ -106,7 +106,7 @@ float cross_entropy(float *p_NC, long *y_N, int num) {
 
 float *fit_linear(float *x_ND, long *y_N) {
 
-    float eta = 0.01/N_TRAIN;
+    float eta = 0.05/N_TRAIN;
 
     // Allocate weight: 10 x (3x32x32)
     float *w_CD = (float *)malloc(CLASSES*DIM*sizeof(float));
@@ -114,7 +114,7 @@ float *fit_linear(float *x_ND, long *y_N) {
         for (int d = 0; d < DIM; d++)
             w_CD[c*DIM+d] = 0;
 
-    int steps = 2;
+    int steps = 200;
     for (int step = 0; step < steps; step++) {
 
         struct timespec start, end;
@@ -157,18 +157,40 @@ float *fit_linear(float *x_ND, long *y_N) {
     return w_CD;
 }
 
+int eval_linear(float *w_CD, float *x_MD, long *y_M) {
+    float *o_MC = forward_linear(x_MD, w_CD, N_TEST);
+    int correct = 0;
+    for (int m = 0; m < N_TEST; m++) {
+        int max_i = 0;
+        int max_v = -100000;
+        for (int c = 0; c < CLASSES; c++) {
+            if (o_MC[m*CLASSES+c] > max_v) {
+                max_i = c;
+                max_v = o_MC[m*CLASSES+c];
+            }
+        }
+        if (max_i == y_M[m]) {
+            correct += 1;
+        }
+    }
+    return correct;
+}
+
 int main() {
-    float *train_x = (float *) read_data("/home/ubuntu/notebooks/train_x.bin");
-    long *train_y = (long *)read_data("/home/ubuntu/notebooks/train_y.bin");
-    float *weight = fit_linear(train_x, train_y);
-    free(train_x);
-    free(train_y);
+    float *train_x_ND = (float *) read_data("/home/ubuntu/notebooks/train_x.bin");
+    long *train_y_N = (long *)read_data("/home/ubuntu/notebooks/train_y.bin");
+    float *weight_CD = fit_linear(train_x_ND, train_y_N);
+    free(train_x_ND);
+    free(train_y_N);
 
-    float *test_x = (float *)read_data("/home/ubuntu/notebooks/test_x.bin");
-    long *test_y = (long *)read_data("/home/ubuntu/notebooks/test_y.bin");
+    float *test_x_MD = (float *)read_data("/home/ubuntu/notebooks/test_x.bin");
+    long *test_y_M = (long *)read_data("/home/ubuntu/notebooks/test_y.bin");
 
-    free(test_x);
-    free(test_y);
-    free(weight);
+    int correct = eval_linear(weight_CD, test_x_MD, test_y_M);
+    printf("Correct: %d\n", correct);
+
+    free(test_x_MD);
+    free(test_y_M);
+    free(weight_CD);
     return 0;
 }
