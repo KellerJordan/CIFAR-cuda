@@ -197,7 +197,7 @@ int eval_linear(float *w_CD, float *x_MD, long *y_M) {
 }
 
 int main() {
-    float *train_x_ND = (float *) read_data("/home/ubuntu/notebooks/train_x.bin");
+    float *train_x_ND = (float *)read_data("/home/ubuntu/notebooks/train_x.bin");
     long *train_y_N = (long *)read_data("/home/ubuntu/notebooks/train_y.bin");
     float *weight_CD = fit_linear(train_x_ND, train_y_N);
     free(train_x_ND);
