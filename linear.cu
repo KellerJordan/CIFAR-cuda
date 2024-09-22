@@ -216,7 +216,7 @@ float *fit_linear(float *x_ND, long *y_N) {
         cuda_forward<<<blocksPerGrid, threadsPerBlock>>>(xc_ND, wc_CD, oc_NC);
         err = cudaGetLastError();
         if (err != cudaSuccess) {
-            fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(err));
+            fprintf(stderr, "Failed to launch kernel (error code %s)!\n", cudaGetErrorString(err));
             exit(EXIT_FAILURE);
         }
         size = N_TRAIN*CLASSES*sizeof(float);
@@ -243,7 +243,7 @@ float *fit_linear(float *x_ND, long *y_N) {
         cuda_backward<<<blocksPerGrid, threadsPerBlock>>>(xc_ND, wc_CD, deltac_NC);
         err = cudaGetLastError();
         if (err != cudaSuccess) {
-            fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(err));
+            fprintf(stderr, "Failed to launch kernel (error code %s)!\n", cudaGetErrorString(err));
             exit(EXIT_FAILURE);
         }
         size = CLASSES*DIM*sizeof(float);
