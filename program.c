@@ -151,10 +151,10 @@ float *fit_linear(float *x_ND, long *y_N) {
             for (int d = 0; d < DIM; d++)
                 w_CD[c*DIM+d] += eta * u_CD[c*DIM+d];
 
-        free(o);
-        free(p);
-        free(delta);
-        free(u);
+        free(o_NC);
+        free(p_NC);
+        free(delta_NC);
+        free(u_CD);
 
         clock_gettime(CLOCK_MONOTONIC, &end);
         elapsed = (end.tv_sec - start.tv_sec);
@@ -162,7 +162,7 @@ float *fit_linear(float *x_ND, long *y_N) {
         printf("Time elapsed: %.9f seconds\n", elapsed);
     }
 
-    return w;
+    return w_CD;
 }
 
 int main() {
