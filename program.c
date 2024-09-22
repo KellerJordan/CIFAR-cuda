@@ -39,7 +39,7 @@ unsigned char* read_data(char *path) {
 const int DIM = 3*32*32;
 const int CLASSES = 10;
 //const int N_TRAIN = 50000;
-const int N_TRAIN = 500;
+const int N_TRAIN = 1000;
 const int N_TEST = 10000;
 
 float *forward_linear(float *x_ND, float *w_CD, int num) {
@@ -106,7 +106,7 @@ float cross_entropy(float *p_NC, long *y_N, int num) {
 
 float *fit_linear(float *x_ND, long *y_N) {
 
-    float eta = 0.05/N_TRAIN;
+    float eta = 0.03/N_TRAIN;
 
     // Allocate weight: 10 x (3x32x32)
     float *w_CD = (float *)malloc(CLASSES*DIM*sizeof(float));
