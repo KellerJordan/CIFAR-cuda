@@ -198,7 +198,7 @@ float *fit_linear(float *x_ND, long *y_N) {
 
     struct timespec start, end;
     double elapsed;
-    int steps = 100;
+    int steps = 500;
     for (int step = 0; step < steps; step++) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
