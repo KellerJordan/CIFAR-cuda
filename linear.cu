@@ -227,6 +227,7 @@ int eval_linear(float *w_CD, float *x_MD, long *y_M) {
             correct += 1;
         }
     }
+    free(o_MC);
     return correct;
 }
 
