@@ -9,6 +9,7 @@ const int CLASSES = 10;
 const int N_TRAIN = 50000;
 //const int N_TRAIN = 500;
 const int N_TEST = 10000;
+const float ETA = 0.01/N_TRAIN;
 
 __global__ void cuda_forward(float *xc_ND, float *wc_CD, float *oc_NC) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -19,16 +20,16 @@ __global__ void cuda_forward(float *xc_ND, float *wc_CD, float *oc_NC) {
         for (int d = 0; d < DIM; d++) {
             sum += xc_ND[n*DIM+d] * wc_CD[c*DIM+d];
         }
-        oc_NC[idx] = sum;
+        oc_NC[idx] = ETA * sum;
     }
 }
 
 __global__ void cuda_backward(float *xc_ND, float *wc_CD, float *deltac_NC) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < CLASSES*DIM) {
-        float sum = 0;
         int c = idx / DIM;
         int d = idx % DIM;
+        float sum = 0;
         for (int n = 0; n < N_TRAIN; n++) {
             sum += xc_ND[n*DIM+d] * deltac_NC[n*CLASSES+c];
         }
@@ -136,7 +137,6 @@ float cross_entropy(float *p_NC, long *y_N, int num) {
     return loss;
 }
 
-const float ETA = 0.0/N_TRAIN;
 float *fit_linear(float *x_ND, long *y_N) {
 
     cudaError_t err;
@@ -204,7 +204,7 @@ float *fit_linear(float *x_ND, long *y_N) {
 
     struct timespec start, end;
     double elapsed;
-    int steps = 2;
+    int steps = 200;
     for (int step = 0; step < steps; step++) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -241,14 +241,12 @@ float *fit_linear(float *x_ND, long *y_N) {
                 }
             }
         } else {
-
             size = N_TRAIN*CLASSES*sizeof(float);
             err = cudaMemcpy(deltac_NC, delta_NC, size, cudaMemcpyHostToDevice);
             if (err != cudaSuccess) {
                 fprintf(stderr, "Failed to copy vector C from host to device (error code %s)!\n", cudaGetErrorString(err));
                 exit(EXIT_FAILURE);
             }
-
             N = CLASSES*DIM;
             threadsPerBlock = 1024;
             blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
@@ -264,7 +262,6 @@ float *fit_linear(float *x_ND, long *y_N) {
                 fprintf(stderr, "Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(err));
                 exit(EXIT_FAILURE);
             }
-
         }
 
         size = CLASSES*DIM*sizeof(float);
