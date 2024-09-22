@@ -164,7 +164,21 @@ float *fit_linear(float *x_ND, long *y_N) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
 
-        forward_linear(x_ND, w_CD, o_NC, N_TRAIN);
+        //forward_linear(x_ND, w_CD, o_NC, N_TRAIN);
+        int N = N_TRAIN*CLASSES;
+        int threadsPerBlock = 1024;
+        int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+        cuda_forward<<<blocksPerGrid, threadsPerBlock>>>(xc_ND, wc_CD, oc_NC);
+        err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(err));
+            exit(EXIT_FAILURE);
+        }
+        err = cudaMemcpy(o_NC, oc_NC, size, cudaMemcpyDeviceToHost);
+        if (err != cudaSuccess) {
+            fprintf(stderr, "Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(err));
+            exit(EXIT_FAILURE);
+        }
 
         float *p_NC = softmax(o_NC, N_TRAIN);
         float *delta_NC = sub(one_hot(y_N, N_TRAIN), p_NC, N_TRAIN*CLASSES);
