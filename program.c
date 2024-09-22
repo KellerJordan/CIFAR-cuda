@@ -38,7 +38,8 @@ unsigned char* read_data(char *path) {
 
 const int DIM = 3*32*32;
 const int CLASSES = 10;
-const int N_TRAIN = 50000;
+//const int N_TRAIN = 50000;
+const int N_TRAIN = 500;
 const int N_TEST = 10000;
 
 float *forward_linear(float *x, float *w, int num) {
@@ -105,7 +106,7 @@ float cross_entropy(float *p, long *y, int num) {
 
 float *fit_linear(float *x, long *y) {
 
-    float eta = 0.05/50000.;
+    float eta = 0.02/50000.;
 
     // Allocate weight: 10 x (3x32x32)
     float *w = (float *)malloc(CLASSES*DIM*sizeof(float));
@@ -134,17 +135,26 @@ float *fit_linear(float *x, long *y) {
         printf("\n");
         */
 
+        float *u = (float *)malloc(CLASSES*DIM*sizeof(float));
+        for (int c = 0; c < CLASSES; c++)
+            for (int d = 0; d < DIM; d++)
+                u[c*DIM+d] = 0;
+
         for (int c = 0; c < CLASSES; c++) {
             for (int d = 0; d < DIM; d++) {
                 for (int n = 0; n < N_TRAIN; n++) {
-                    w[c*DIM+d] += eta * delta[n*CLASSES+c] * x[n*DIM+d];
+                    u[c*DIM+d] += delta[n*CLASSES+c] * x[n*DIM+d];
                 }
             }
         }
+        for (int c = 0; c < CLASSES; c++)
+            for (int d = 0; d < DIM; d++)
+                w[c*DIM+d] += eta * u[c*DIM+d];
 
         free(o);
         free(p);
         free(delta);
+        free(u);
 
         clock_gettime(CLOCK_MONOTONIC, &end);
         elapsed = (end.tv_sec - start.tv_sec);
