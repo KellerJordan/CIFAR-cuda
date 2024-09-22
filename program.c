@@ -104,7 +104,11 @@ float cross_entropy(float *p_NC, long *y_N, int num) {
     return loss;
 }
 
+const float ETA = 0.01/N_TRAIN;
 float *fit_linear(float *x_ND, long *y_N) {
+
+    struct timespec start, end;
+    double elapsed;
 
     float *xT_DN = (float *)malloc(N_TRAIN*DIM*sizeof(float));
     for (int n = 0; n < N_TRAIN; n++) {
@@ -113,22 +117,18 @@ float *fit_linear(float *x_ND, long *y_N) {
         }
     }
 
-    float eta = 0.02/N_TRAIN;
-
-    // Allocate weight: 10 x (3x32x32)
     float *w_CD = (float *)malloc(CLASSES*DIM*sizeof(float));
     for (int c = 0; c < CLASSES; c++)
         for (int d = 0; d < DIM; d++)
             w_CD[c*DIM+d] = 0;
 
-    int steps = 200;
+    int steps = 20;
     for (int step = 0; step < steps; step++) {
 
-        struct timespec start, end;
-        double elapsed;
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         float *o_NC = forward_linear(x_ND, w_CD, N_TRAIN);
+
         float *p_NC = softmax(o_NC, N_TRAIN);
         float *delta_NC = sub(one_hot(y_N, N_TRAIN), p_NC, N_TRAIN*CLASSES);
         float loss = cross_entropy(p_NC, y_N, N_TRAIN);
@@ -148,7 +148,7 @@ float *fit_linear(float *x_ND, long *y_N) {
         }
         for (int c = 0; c < CLASSES; c++)
             for (int d = 0; d < DIM; d++)
-                w_CD[c*DIM+d] += eta * u_CD[c*DIM+d];
+                w_CD[c*DIM+d] += ETA * u_CD[c*DIM+d];
 
         free(u_CD);
 
@@ -159,8 +159,9 @@ float *fit_linear(float *x_ND, long *y_N) {
         clock_gettime(CLOCK_MONOTONIC, &end);
         elapsed = (end.tv_sec - start.tv_sec);
         elapsed += (end.tv_nsec - start.tv_nsec) / 1e9;
-        printf("Step: %d, Loss: %f, ", step, loss/N_TRAIN);
         printf("Time elapsed: %.6f seconds\n", elapsed);
+
+        printf("Step: %d, Loss: %f\n", step, loss/N_TRAIN);
     }
 
     free(xT_DN);
