@@ -108,7 +108,7 @@ float *fit_linear(float *x, long *y) {
     float eta = 5/50000;
 
     // Allocate weight: 10 x (3x32x32)
-    float *w = (float *)malloc(CLASSES*DIM*sizeof(float));
+    float *w = (float *)malloc(DIM*CLASSES*sizeof(float));
     for (int c = 0; c < CLASSES; c++)
         for (int d = 0; d < DIM; d++)
             w[c*DIM+d] = 0;
@@ -125,7 +125,14 @@ float *fit_linear(float *x, long *y) {
         float *delta = sub(one_hot(y, N_TRAIN), p, N_TRAIN*CLASSES);
         float loss = cross_entropy(p, y, N_TRAIN);
         printf("Step: %d, Loss: %f\n", step, loss/N_TRAIN);
-        // 50000x10
+
+        printf("weight: %f\n", w[0]);
+        /*
+        for (int c = 0; c < 10; c++) {
+            printf("%f  ", delta[c]);
+        }
+        printf("\n");
+        */
 
         for (int c = 0; c < CLASSES; c++) {
             for (int d = 0; d < DIM; d++) {
