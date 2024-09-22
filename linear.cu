@@ -6,10 +6,10 @@
 
 const int DIM = 3*32*32;
 const int CLASSES = 10;
-//const int N_TRAIN = 50000;
-const int N_TRAIN = 500;
+const int N_TRAIN = 50000;
+//const int N_TRAIN = 500;
 const int N_TEST = 10000;
-const float ETA = 0.02/N_TRAIN;
+const float ETA = 0.015/N_TRAIN;
 
 __global__ void cuda_forward(float *xc_ND, float *wc_CD, float *oc_NC) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -199,7 +199,7 @@ float *fit_linear(float *x_ND, long *y_N) {
 
     struct timespec start, end;
     double elapsed;
-    int steps = 200;
+    int steps = 1000;
     for (int step = 0; step < steps; step++) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -252,7 +252,6 @@ float *fit_linear(float *x_ND, long *y_N) {
             fprintf(stderr, "Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(err));
             exit(EXIT_FAILURE);
         }
-
 
         free(p_NC);
         free(one_hot_NC);
