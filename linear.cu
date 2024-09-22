@@ -211,7 +211,8 @@ float *fit_linear(float *x_ND, long *y_N) {
 }
 
 int eval_linear(float *w_CD, float *x_MD, long *y_M) {
-    float *o_MC = forward_linear(x_MD, w_CD, N_TEST);
+    float *o_MC = (float *)malloc(N_TEST*CLASSES*sizeof(float));
+    forward_linear(x_MD, w_CD, o_MC, N_TEST);
     int correct = 0;
     for (int m = 0; m < N_TEST; m++) {
         int max_i = 0;
