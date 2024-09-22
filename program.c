@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<time.h>
 #include<math.h>
+#include<stdbool.h>
 
 unsigned char* read_data(char *path) {
 
@@ -90,11 +91,30 @@ float *sub(float *x1, float *x2, int num) {
     return x1;
 }
 
+float cross_entropy(float *p, long *y, int num) {
+    float loss = 0;
+    for (int n = 0; n < num; n++) {
+        if (!(y[n] >= 0 && y[n] < 10)) {
+            printf("y[n] out of range: %ld\n", y[n]);
+            exit(1);
+        }
+        loss += -logf(p[n*CLASSES+y[n]]);
+    }
+    return loss;
+}
+
 float *fit_linear(float *x, long *y) {
+
+    float eta = 5/50000;
+
+    // Allocate weight: 10 x (3x32x32)
     float *w = (float *)malloc(CLASSES*DIM*sizeof(float));
+    for (int c = 0; c < CLASSES; c++)
+        for (int d = 0; d < DIM; d++)
+            w[c*DIM+d] = 0;
 
     int steps = 100;
-    for (int s = 0; s < steps; s++) {
+    for (int step = 0; step < steps; step++) {
 
         struct timespec start, end;
         double elapsed;
@@ -103,6 +123,17 @@ float *fit_linear(float *x, long *y) {
         float *o = forward_linear(x, w, N_TRAIN);
         float *p = softmax(o, N_TRAIN);
         float *delta = sub(one_hot(y, N_TRAIN), p, N_TRAIN*CLASSES);
+        float loss = cross_entropy(p, y, N_TRAIN);
+        printf("Step: %d, Loss: %f\n", step, loss/N_TRAIN);
+        // 50000x10
+
+        for (int c = 0; c < CLASSES; c++) {
+            for (int d = 0; d < DIM; d++) {
+                for (int n = 0; n < N_TRAIN; n++) {
+                    w[c*DIM+d] += eta * delta[n*CLASSES+c] * x[n*DIM+d];
+                }
+            }
+        }
 
         free(o);
         free(p);
