@@ -177,7 +177,7 @@ float *fit_linear(float *x_ND, long *y_N) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
 
-        if (1) {
+        if (0) {
             forward_linear(x_ND, w_CD, o_NC, N_TRAIN);
         } else{
             int N = N_TRAIN*CLASSES;
