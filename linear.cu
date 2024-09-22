@@ -4,7 +4,7 @@
 #include<math.h>
 #include<stdbool.h>
 
-unsigned char* read_data(char *path) {
+unsigned char* read_data(const char path[]) {
 
     FILE *file = fopen(path, "rb");
     if (file == NULL) {

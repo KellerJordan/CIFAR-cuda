@@ -1,2 +1,2 @@
-my_mytarget: program.c
-	gcc -O1 program.c -o program -lm
+my_mytarget: linear.cu
+	nvcc -O1 linear.cu -o train -lm
