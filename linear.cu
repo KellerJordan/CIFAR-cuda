@@ -6,10 +6,10 @@
 
 const int DIM = 3*32*32;
 const int CLASSES = 10;
-const int N_TRAIN = 50000;
-//const int N_TRAIN = 500;
+//const int N_TRAIN = 50000;
+const int N_TRAIN = 500;
 const int N_TEST = 10000;
-const float ETA = 0.01/N_TRAIN;
+const float ETA = 0.02/N_TRAIN;
 
 __global__ void cuda_forward(float *xc_ND, float *wc_CD, float *oc_NC) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -20,7 +20,7 @@ __global__ void cuda_forward(float *xc_ND, float *wc_CD, float *oc_NC) {
         for (int d = 0; d < DIM; d++) {
             sum += xc_ND[n*DIM+d] * wc_CD[c*DIM+d];
         }
-        oc_NC[idx] = ETA * sum;
+        oc_NC[idx] = sum;
     }
 }
 
@@ -33,7 +33,7 @@ __global__ void cuda_backward(float *xc_ND, float *wc_CD, float *deltac_NC) {
         for (int n = 0; n < N_TRAIN; n++) {
             sum += xc_ND[n*DIM+d] * deltac_NC[n*CLASSES+c];
         }
-        wc_CD[idx] = sum;
+        wc_CD[idx] = ETA * sum;
     }
 }
 
@@ -71,7 +71,7 @@ unsigned char* read_data(const char path[]) {
 
 float hash(float *x) {
     float sum = 0;
-    for (int i = 0; i < 1000; i+=2) {
+    for (int i = 0; i < 1000; i+=3) {
         sum += abs(x[i]);
     }
     return sum;
@@ -230,9 +230,8 @@ float *fit_linear(float *x_ND, long *y_N) {
         float loss = cross_entropy(p_NC, y_N, N_TRAIN);
         float *one_hot_NC = one_hot(y_N, N_TRAIN);
         sub(one_hot_NC, p_NC, delta_NC, N_TRAIN*CLASSES);
-        printf("Hash(w)=%f\n", hash(w_CD));
 
-        if (1) {
+        if (0) {
             for (int c = 0; c < CLASSES; c++) {
                 for (int d = 0; d < DIM; d++) {
                     float u = 0;
