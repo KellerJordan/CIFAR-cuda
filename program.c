@@ -106,7 +106,7 @@ float cross_entropy(float *p, long *y, int num) {
 
 float *fit_linear(float *x, long *y) {
 
-    float eta = 0.02/50000.;
+    float eta = 0.5/N_TRAIN;
 
     // Allocate weight: 10 x (3x32x32)
     float *w = (float *)malloc(CLASSES*DIM*sizeof(float));
@@ -114,7 +114,7 @@ float *fit_linear(float *x, long *y) {
         for (int d = 0; d < DIM; d++)
             w[c*DIM+d] = 0;
 
-    int steps = 100;
+    int steps = 2;
     for (int step = 0; step < steps; step++) {
 
         struct timespec start, end;
