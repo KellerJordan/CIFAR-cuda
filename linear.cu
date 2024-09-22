@@ -176,11 +176,6 @@ float *fit_linear(float *x_ND, long *y_N) {
         fprintf(stderr, "Failed to allocate device memory for C (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
     }
-    err = cudaMemcpy(wc_CD, w_CD, size, cudaMemcpyHostToDevice);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "Failed to copy vector C from host to device (error code %s)!\n", cudaGetErrorString(err));
-        exit(EXIT_FAILURE);
-    }
 
     float *oc_NC;
     size = N_TRAIN*CLASSES*sizeof(float);
@@ -204,11 +199,17 @@ float *fit_linear(float *x_ND, long *y_N) {
 
     struct timespec start, end;
     double elapsed;
-    int steps = 200;
+    int steps = 5;
     for (int step = 0; step < steps; step++) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
 
+        size = CLASSES*DIM*sizeof(float);
+        err = cudaMemcpy(wc_CD, w_CD, size, cudaMemcpyHostToDevice);
+        if (err != cudaSuccess) {
+            fprintf(stderr, "Failed to copy vector C from host to device (error code %s)!\n", cudaGetErrorString(err));
+            exit(EXIT_FAILURE);
+        }
         int N = N_TRAIN*CLASSES;
         int threadsPerBlock = 1024;
         int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
@@ -229,8 +230,9 @@ float *fit_linear(float *x_ND, long *y_N) {
         float loss = cross_entropy(p_NC, y_N, N_TRAIN);
         float *one_hot_NC = one_hot(y_N, N_TRAIN);
         sub(one_hot_NC, p_NC, delta_NC, N_TRAIN*CLASSES);
+        printf("Hash(w)=%f\n", hash(w_CD));
 
-        if (0) {
+        if (1) {
             for (int c = 0; c < CLASSES; c++) {
                 for (int d = 0; d < DIM; d++) {
                     float u = 0;
@@ -263,13 +265,8 @@ float *fit_linear(float *x_ND, long *y_N) {
                 exit(EXIT_FAILURE);
             }
         }
+        printf("Hash(w)=%f\n", hash(w_CD));
 
-        size = CLASSES*DIM*sizeof(float);
-        err = cudaMemcpy(wc_CD, w_CD, size, cudaMemcpyHostToDevice);
-        if (err != cudaSuccess) {
-            fprintf(stderr, "Failed to copy vector C from host to device (error code %s)!\n", cudaGetErrorString(err));
-            exit(EXIT_FAILURE);
-        }
 
         free(p_NC);
         free(one_hot_NC);
