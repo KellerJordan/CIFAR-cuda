@@ -107,6 +107,8 @@ float cross_entropy(float *p_NC, long *y_N, int num) {
 const float ETA = 0.01/N_TRAIN;
 float *fit_linear(float *x_ND, long *y_N) {
 
+    cudaError_t err;
+
     struct timespec start, end;
     double elapsed;
 
@@ -121,6 +123,38 @@ float *fit_linear(float *x_ND, long *y_N) {
     for (int c = 0; c < CLASSES; c++)
         for (int d = 0; d < DIM; d++)
             w_CD[c*DIM+d] = 0;
+
+    size_t size = N_TRAIN*DIM*sizeof(float);
+    float *xc_ND;
+    err = cudaMalloc((void**)&xc_ND, N_TRAIN*DIM*sizeof(float));
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Failed to allocate device memory for C (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+    err = cudaMemcpy(x_ND, xc_ND, size, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Failed to copy vector C from host to device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+
+    float *wc_CD;
+    err = cudaMalloc((void**)&wc_CD, CLASSES*DIM*sizeof(float));
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Failed to allocate device memory for C (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+    err = cudaMemcpy(x_ND, xc_ND, size, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Failed to copy vector C from host to device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+
+    float *oc_NC;
+    err = cudaMalloc((void**)&oc_NC, N_TRAIN*CLASSES*sizeof(float));
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Failed to allocate device memory for C (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
 
     int steps = 20;
     for (int step = 0; step < steps; step++) {
@@ -165,6 +199,8 @@ float *fit_linear(float *x_ND, long *y_N) {
     }
 
     free(xT_DN);
+    cudaFree(xc_ND);
+    cudaFree(wc_CD);
 
     return w_CD;
 }
@@ -188,6 +224,19 @@ int eval_linear(float *w_CD, float *x_MD, long *y_M) {
     return correct;
 }
 
+__global__ void cuda_forward(float *x_ND, float *w_CD, float *o_NC) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < N_TRAIN*CLASSES) {
+        float sum = 0;
+        int n = idx / DIM;
+        int c = idx % DIM;
+        for (int d = 0; d < DIM; d++) {
+            sum += x_ND[n*DIM+d] * w_CD[c*DIM+d];
+        }
+        o_NC[idx] = sum;
+    }
+}
+
 int main() {
     float *train_x_ND = (float *)read_data("/home/ubuntu/notebooks/train_x.bin");
     long *train_y_N = (long *)read_data("/home/ubuntu/notebooks/train_y.bin");
@@ -204,5 +253,8 @@ int main() {
     free(test_x_MD);
     free(test_y_M);
     free(weight_CD);
+
+    cudaDeviceReset();
+
     return 0;
 }
