@@ -38,8 +38,8 @@ unsigned char* read_data(char *path) {
 
 const int DIM = 3*32*32;
 const int CLASSES = 10;
-//const int N_TRAIN = 50000;
-const int N_TRAIN = 5000;
+const int N_TRAIN = 50000;
+//const int N_TRAIN = 5000;
 const int N_TEST = 10000;
 
 float *forward_linear(float *x_ND, float *w_CD, int num) {
@@ -121,8 +121,6 @@ float *fit_linear(float *x_ND, long *y_N) {
         for (int d = 0; d < DIM; d++)
             w_CD[c*DIM+d] = 0;
 
-    float *deltaT_CN = (float *)malloc(CLASSES*N_TRAIN*sizeof(float));
-
     int steps = 200;
     for (int step = 0; step < steps; step++) {
 
@@ -135,12 +133,6 @@ float *fit_linear(float *x_ND, long *y_N) {
         float *delta_NC = sub(one_hot(y_N, N_TRAIN), p_NC, N_TRAIN*CLASSES);
         float loss = cross_entropy(p_NC, y_N, N_TRAIN);
 
-        for (int n = 0; n < N_TRAIN; n++) {
-            for (int c = 0; c < CLASSES; c++) {
-                deltaT_CN[c*N_TRAIN+n] = delta_NC[n*CLASSES+c];
-            }
-        }
-
         float *u_CD = (float *)malloc(CLASSES*DIM*sizeof(float));
         for (int c = 0; c < CLASSES; c++)
             for (int d = 0; d < DIM; d++)
@@ -149,8 +141,8 @@ float *fit_linear(float *x_ND, long *y_N) {
         for (int c = 0; c < CLASSES; c++) {
             for (int d = 0; d < DIM; d++) {
                 for (int n = 0; n < N_TRAIN; n++) {
-                    //u_CD[c*DIM+d] += delta_NC[n*CLASSES+c] * xT_DN[d*N_TRAIN+n];
-                    u_CD[c*DIM+d] += deltaT_CN[c*N_TRAIN+n] * xT_DN[d*N_TRAIN+n];
+                    u_CD[c*DIM+d] += delta_NC[n*CLASSES+c] * xT_DN[d*N_TRAIN+n];
+                    //u_CD[c*DIM+d] += delta_NC[n*CLASSES+c] * x_ND[n*DIM+d]; // 6x slower bc of bad memory access pattern
                 }
             }
         }
@@ -171,7 +163,6 @@ float *fit_linear(float *x_ND, long *y_N) {
         printf("Time elapsed: %.6f seconds\n", elapsed);
     }
 
-    free(deltaT_CN);
     free(xT_DN);
 
     return w_CD;
