@@ -105,11 +105,10 @@ float *one_hot(long *y, int num) {
     return z;
 }
 
-float *sub(float *x1, float *x2, int num) {
+void sub(float *x1, float *x2, float *x3, int num) {
     for (int i = 0; i < num; i++) {
-        x1[i] -= x2[i];
+        x3[i] = x1[i] - x2[i];
     }
-    return x1;
 }
 
 float cross_entropy(float *p_NC, long *y_N, int num) {
@@ -130,8 +129,7 @@ float *fit_linear(float *x_ND, long *y_N) {
     cudaError_t err;
     size_t size;
 
-    struct timespec start, end;
-    double elapsed;
+    // Allocate GPU memory
 
     float *xT_DN = (float *)malloc(N_TRAIN*DIM*sizeof(float));
     for (int n = 0; n < N_TRAIN; n++) {
@@ -180,6 +178,19 @@ float *fit_linear(float *x_ND, long *y_N) {
     }
     float *o_NC = (float *)malloc(size);
 
+    float *deltac_NC;
+    size = N_TRAIN*CLASSES*sizeof(float);
+    err = cudaMalloc((void**)&deltac_NC, size);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Failed to allocate device memory for C (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+    float *delta_NC = (float *)malloc(size);
+
+    // Begin iteration
+
+    struct timespec start, end;
+    double elapsed;
     int steps = 200;
     for (int step = 0; step < steps; step++) {
 
@@ -202,8 +213,9 @@ float *fit_linear(float *x_ND, long *y_N) {
         }
 
         float *p_NC = softmax(o_NC, N_TRAIN);
-        float *delta_NC = sub(one_hot(y_N, N_TRAIN), p_NC, N_TRAIN*CLASSES);
         float loss = cross_entropy(p_NC, y_N, N_TRAIN);
+        float *one_hot_NC = one_hot(y_N, N_TRAIN);
+        sub(one_hot_NC, p_NC, delta_NC, N_TRAIN*CLASSES);
 
         for (int c = 0; c < CLASSES; c++) {
             for (int d = 0; d < DIM; d++) {
@@ -223,7 +235,7 @@ float *fit_linear(float *x_ND, long *y_N) {
         }
 
         free(p_NC);
-        free(delta_NC);
+        free(one_hot_NC);
 
         clock_gettime(CLOCK_MONOTONIC, &end);
         elapsed = (end.tv_sec - start.tv_sec);
@@ -233,12 +245,13 @@ float *fit_linear(float *x_ND, long *y_N) {
         printf("Step: %d, Loss: %f\n", step, loss/N_TRAIN);
     }
 
-
     free(xT_DN);
     free(o_NC);
+    free(delta_NC);
     cudaFree(xc_ND);
     cudaFree(wc_CD);
     cudaFree(oc_NC);
+    cudaFree(deltac_NC);
 
     return w_CD;
 }
