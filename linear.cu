@@ -42,8 +42,7 @@ const int N_TRAIN = 50000;
 //const int N_TRAIN = 5000;
 const int N_TEST = 10000;
 
-float *forward_linear(float *x_ND, float *w_CD, int num) {
-    float *o_NC = (float *)malloc(num*CLASSES*sizeof(float));
+float *forward_linear(float *x_ND, float *w_CD, float *o_NC, int num) {
     for (int n = 0; n < num; n++) {
         for (int c = 0; c < CLASSES; c++) {
             int idx = CLASSES * n + c;
@@ -152,18 +151,20 @@ float *fit_linear(float *x_ND, long *y_N) {
     }
 
     float *oc_NC;
-    err = cudaMalloc((void**)&oc_NC, N_TRAIN*CLASSES*sizeof(float));
+    size = N_TRAIN*CLASSES*sizeof(float);
+    err = cudaMalloc((void**)&oc_NC, size);
     if (err != cudaSuccess) {
         fprintf(stderr, "Failed to allocate device memory for C (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
     }
+    float *o_NC = (float *)malloc(size);
 
     int steps = 20;
     for (int step = 0; step < steps; step++) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
 
-        float *o_NC = forward_linear(x_ND, w_CD, N_TRAIN);
+        forward_linear(x_ND, w_CD, o_NC, N_TRAIN);
 
         float *p_NC = softmax(o_NC, N_TRAIN);
         float *delta_NC = sub(one_hot(y_N, N_TRAIN), p_NC, N_TRAIN*CLASSES);
