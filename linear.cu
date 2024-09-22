@@ -4,6 +4,25 @@
 #include<math.h>
 #include<stdbool.h>
 
+const int DIM = 3*32*32;
+const int CLASSES = 10;
+const int N_TRAIN = 50000;
+//const int N_TRAIN = 5000;
+const int N_TEST = 10000;
+
+__global__ void cuda_forward(float *x_ND, float *w_CD, float *o_NC) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < N_TRAIN*CLASSES) {
+        float sum = 0;
+        int n = idx / CLASSES;
+        int c = idx % CLASSES;
+        for (int d = 0; d < DIM; d++) {
+            sum += x_ND[n*DIM+d] * w_CD[c*DIM+d];
+        }
+        o_NC[idx] = sum;
+    }
+}
+
 unsigned char* read_data(const char path[]) {
 
     FILE *file = fopen(path, "rb");
@@ -35,12 +54,6 @@ unsigned char* read_data(const char path[]) {
 
     return buffer;
 }
-
-const int DIM = 3*32*32;
-const int CLASSES = 10;
-const int N_TRAIN = 50000;
-//const int N_TRAIN = 5000;
-const int N_TEST = 10000;
 
 float *forward_linear(float *x_ND, float *w_CD, float *o_NC, int num) {
     for (int n = 0; n < num; n++) {
@@ -164,20 +177,23 @@ float *fit_linear(float *x_ND, long *y_N) {
 
         clock_gettime(CLOCK_MONOTONIC, &start);
 
-        //forward_linear(x_ND, w_CD, o_NC, N_TRAIN);
-        int N = N_TRAIN*CLASSES;
-        int threadsPerBlock = 1024;
-        int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
-        cuda_forward<<<blocksPerGrid, threadsPerBlock>>>(xc_ND, wc_CD, oc_NC);
-        err = cudaGetLastError();
-        if (err != cudaSuccess) {
-            fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(err));
-            exit(EXIT_FAILURE);
-        }
-        err = cudaMemcpy(o_NC, oc_NC, size, cudaMemcpyDeviceToHost);
-        if (err != cudaSuccess) {
-            fprintf(stderr, "Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(err));
-            exit(EXIT_FAILURE);
+        if (1) {
+            forward_linear(x_ND, w_CD, o_NC, N_TRAIN);
+        } else{
+            int N = N_TRAIN*CLASSES;
+            int threadsPerBlock = 1024;
+            int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+            cuda_forward<<<blocksPerGrid, threadsPerBlock>>>(xc_ND, wc_CD, oc_NC);
+            err = cudaGetLastError();
+            if (err != cudaSuccess) {
+                fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(err));
+                exit(EXIT_FAILURE);
+            }
+            err = cudaMemcpy(o_NC, oc_NC, size, cudaMemcpyDeviceToHost);
+            if (err != cudaSuccess) {
+                fprintf(stderr, "Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(err));
+                exit(EXIT_FAILURE);
+            }
         }
 
         float *p_NC = softmax(o_NC, N_TRAIN);
@@ -243,19 +259,6 @@ int eval_linear(float *w_CD, float *x_MD, long *y_M) {
     }
     free(o_MC);
     return correct;
-}
-
-__global__ void cuda_forward(float *x_ND, float *w_CD, float *o_NC) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < N_TRAIN*CLASSES) {
-        float sum = 0;
-        int n = idx / DIM;
-        int c = idx % DIM;
-        for (int d = 0; d < DIM; d++) {
-            sum += x_ND[n*DIM+d] * w_CD[c*DIM+d];
-        }
-        o_NC[idx] = sum;
-    }
 }
 
 int main() {
