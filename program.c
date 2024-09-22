@@ -2,8 +2,6 @@
 #include<stdlib.h>
 #include<time.h>
 #include<math.h>
-#include <bits/time.h>
-#include <linux/time.h>
 
 unsigned char* read_data(char *path) {
 
@@ -43,8 +41,7 @@ const int N_TRAIN = 50000;
 const int N_TEST = 10000;
 
 float *forward_linear(float *x, float *w, int num) {
-    // 50000x3x32x32, 3x32x32x10
-    float *o = (float *)malloc(num*CLASSES);
+    float *o = (float *)malloc(num*CLASSES*sizeof(float));
     for (int n = 0; n < num; n++) {
         for (int c = 0; c < CLASSES; c++) {
             int idx = CLASSES * n + c;
@@ -58,22 +55,22 @@ float *forward_linear(float *x, float *w, int num) {
 }
 
 float *softmax(float *o, int num) {
-    // 50000x10
-    float *z = (float *)malloc(num*10);
+    float *z = (float *)malloc(num*CLASSES*sizeof(float));
     for (int n = 0; n < num; n++) {
         float Z = 0;
         for (int c = 0; c < CLASSES; c++) {
-            z[n*CLASSES+c] = exp(o[n*CLASSES+c]);
+            z[n*CLASSES+c] = expf(o[n*CLASSES+c]);
             Z += z[n*CLASSES+c];
         }
         for (int c = 0; c < CLASSES; c++) {
             z[n*CLASSES+c] /= Z;
         }
     }
+    return z;
 }
 
-float *one_hot(float *y, int num) {
-    float *z = (float *)malloc(num*10);
+float *one_hot(long *y, int num) {
+    float *z = (float *)malloc(num*CLASSES*sizeof(float));
     for (int n = 0; n < num; n++) {
         for (int c = 0; c < CLASSES; c++) {
             if (y[n] == c) {
@@ -83,6 +80,7 @@ float *one_hot(float *y, int num) {
             }
         }
     }
+    return z;
 }
 
 float *sub(float *x1, float *x2, int num) {
@@ -93,7 +91,7 @@ float *sub(float *x1, float *x2, int num) {
 }
 
 float *fit_linear(float *x, long *y) {
-    float *w = (float *)malloc(CLASSES*DIM*4);
+    float *w = (float *)malloc(CLASSES*DIM*sizeof(float));
 
     int steps = 100;
     for (int s = 0; s < steps; s++) {
