@@ -39,36 +39,36 @@ unsigned char* read_data(char *path) {
 const int DIM = 3*32*32;
 const int CLASSES = 10;
 //const int N_TRAIN = 50000;
-const int N_TRAIN = 500;
+const int N_TRAIN = 5;
 const int N_TEST = 10000;
 
-float *forward_linear(float *x, float *w, int num) {
-    float *o = (float *)malloc(num*CLASSES*sizeof(float));
+float *forward_linear(float *x_ND, float *w_CD, int num) {
+    float *o_NC = (float *)malloc(num*CLASSES*sizeof(float));
     for (int n = 0; n < num; n++) {
         for (int c = 0; c < CLASSES; c++) {
             int idx = CLASSES * n + c;
-            o[idx] = 0;
-            for (int i = 0; i < DIM; i++) {
-                o[idx] += x[i] * w[DIM*c+i];
+            o_NC[idx] = 0;
+            for (int d = 0; d < DIM; d++) {
+                o_NC[idx] += x_ND[n*DIM+d] * w_CD[c*DIM+d];
             }
         }
     }
-    return o;
+    return o_NC;
 }
 
-float *softmax(float *o, int num) {
-    float *z = (float *)malloc(num*CLASSES*sizeof(float));
+float *softmax(float *o_NC, int num) {
+    float *z_NC = (float *)malloc(num*CLASSES*sizeof(float));
     for (int n = 0; n < num; n++) {
         float Z = 0;
         for (int c = 0; c < CLASSES; c++) {
-            z[n*CLASSES+c] = expf(o[n*CLASSES+c]);
-            Z += z[n*CLASSES+c];
+            z_NC[n*CLASSES+c] = expf(o_NC[n*CLASSES+c]);
+            Z += z_NC[n*CLASSES+c];
         }
         for (int c = 0; c < CLASSES; c++) {
-            z[n*CLASSES+c] /= Z;
+            z_NC[n*CLASSES+c] /= Z;
         }
     }
-    return z;
+    return z_NC;
 }
 
 float *one_hot(long *y, int num) {
@@ -106,7 +106,7 @@ float cross_entropy(float *p, long *y, int num) {
 
 float *fit_linear(float *x_ND, long *y_N) {
 
-    float eta = 0.1/N_TRAIN;
+    float eta = 0.01/N_TRAIN;
 
     // Allocate weight: 10 x (3x32x32)
     float *w_CD = (float *)malloc(CLASSES*DIM*sizeof(float));
@@ -128,12 +128,16 @@ float *fit_linear(float *x_ND, long *y_N) {
         printf("Step: %d, Loss: %f\n", step, loss/N_TRAIN);
 
         printf("weight: %f\n", w_CD[0]);
-        for (int n = 0; n < 3; n++) {
+        for (int n = 0; n < 2; n++) {
             for (int c = 0; c < 10; c++) {
-                printf("%f  ", delta_NC[c]);
+                printf("%f  ", o_NC[n*CLASSES+c]);
             }
+            printf("\n");
+            for (int c = 0; c < 10; c++) {
+                printf("%f  ", delta_NC[n*CLASSES+c]);
+            }
+            printf("\n");
         }
-        printf("\n");
 
         float *u_CD = (float *)malloc(CLASSES*DIM*sizeof(float));
         for (int c = 0; c < CLASSES; c++)
