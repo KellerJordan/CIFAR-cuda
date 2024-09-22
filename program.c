@@ -1,6 +1,9 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
+#include<math.h>
+#include <bits/time.h>
+#include <linux/time.h>
 
 unsigned char* read_data(char *path) {
 
@@ -54,8 +57,42 @@ float *forward_linear(float *x, float *w, int num) {
     return o;
 }
 
+float *softmax(float *o, int num) {
+    // 50000x10
+    float *z = (float *)malloc(num*10);
+    for (int n = 0; n < num; n++) {
+        float Z = 0;
+        for (int c = 0; c < CLASSES; c++) {
+            z[n*CLASSES+c] = exp(o[n*CLASSES+c]);
+            Z += z[n*CLASSES+c];
+        }
+        for (int c = 0; c < CLASSES; c++) {
+            z[n*CLASSES+c] /= Z;
+        }
+    }
+}
+
+float *one_hot(float *y, int num) {
+    float *z = (float *)malloc(num*10);
+    for (int n = 0; n < num; n++) {
+        for (int c = 0; c < CLASSES; c++) {
+            if (y[n] == c) {
+                z[n*CLASSES+c] = 1;
+            } else {
+                z[n*CLASSES+c] = 0;
+            }
+        }
+    }
+}
+
+float *sub(float *x1, float *x2, int num) {
+    for (int i = 0; i < num; i++) {
+        x1[i] -= x2[i];
+    }
+    return x1;
+}
+
 float *fit_linear(float *x, long *y) {
-    // 50000x3x32x32, 50000
     float *w = (float *)malloc(CLASSES*DIM*4);
 
     int steps = 100;
@@ -66,10 +103,14 @@ float *fit_linear(float *x, long *y) {
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         float *o = forward_linear(x, w, N_TRAIN);
-        printf("done\n");
+        float *p = softmax(o, N_TRAIN);
+        float *delta = sub(one_hot(y, N_TRAIN), p, N_TRAIN*CLASSES);
+
+        free(o);
+        free(p);
+        free(delta);
 
         clock_gettime(CLOCK_MONOTONIC, &end);
-        
         elapsed = (end.tv_sec - start.tv_sec);
         elapsed += (end.tv_nsec - start.tv_nsec) / 1e9;
         printf("Time elapsed: %.9f seconds\n", elapsed);
@@ -81,22 +122,13 @@ float *fit_linear(float *x, long *y) {
 int main() {
     float *train_x = (float *) read_data("/home/ubuntu/notebooks/train_x.bin");
     long *train_y = (long *)read_data("/home/ubuntu/notebooks/train_y.bin");
-    float *test_x = (float *)read_data("/home/ubuntu/notebooks/test_x.bin");
-    long *test_y = (long *)read_data("/home/ubuntu/notebooks/test_y.bin");
-    // 50000x3x32x32, 10000x3x32x32
-
     float *weight = fit_linear(train_x, train_y);
-
-    /*
-    printf("%f\n", img.data[0]);
-    printf("%f\n", img.data[1]);
-    printf("size: %ld\n", img.size);
-    */
-    printf("%f\n", test_x[0]);
-    printf("%f\n", weight[0]);
-
     free(train_x);
     free(train_y);
+
+    float *test_x = (float *)read_data("/home/ubuntu/notebooks/test_x.bin");
+    long *test_y = (long *)read_data("/home/ubuntu/notebooks/test_y.bin");
+
     free(test_x);
     free(test_y);
     free(weight);
