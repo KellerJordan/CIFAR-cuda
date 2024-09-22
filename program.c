@@ -92,14 +92,14 @@ float *sub(float *x1, float *x2, int num) {
     return x1;
 }
 
-float cross_entropy(float *p, long *y, int num) {
+float cross_entropy(float *p_NC, long *y_N, int num) {
     float loss = 0;
     for (int n = 0; n < num; n++) {
-        if (!(y[n] >= 0 && y[n] < 10)) {
-            printf("y[n] out of range: %ld\n", y[n]);
+        if (!(y_N[n] >= 0 && y_N[n] < 10)) {
+            printf("y[n] out of range: %ld\n", y_N[n]);
             exit(1);
         }
-        loss += -logf(p[n*CLASSES+y[n]]);
+        loss += -logf(p_NC[n*CLASSES+y_N[n]]);
     }
     return loss;
 }
@@ -125,19 +125,6 @@ float *fit_linear(float *x_ND, long *y_N) {
         float *p_NC = softmax(o_NC, N_TRAIN);
         float *delta_NC = sub(one_hot(y_N, N_TRAIN), p_NC, N_TRAIN*CLASSES);
         float loss = cross_entropy(p_NC, y_N, N_TRAIN);
-        printf("Step: %d, Loss: %f\n", step, loss/N_TRAIN);
-
-        printf("weight: %f\n", w_CD[0]);
-        for (int n = 0; n < 2; n++) {
-            for (int c = 0; c < 10; c++) {
-                printf("%f  ", o_NC[n*CLASSES+c]);
-            }
-            printf("\n");
-            for (int c = 0; c < 10; c++) {
-                printf("%f  ", delta_NC[n*CLASSES+c]);
-            }
-            printf("\n");
-        }
 
         float *u_CD = (float *)malloc(CLASSES*DIM*sizeof(float));
         for (int c = 0; c < CLASSES; c++)
@@ -163,7 +150,8 @@ float *fit_linear(float *x_ND, long *y_N) {
         clock_gettime(CLOCK_MONOTONIC, &end);
         elapsed = (end.tv_sec - start.tv_sec);
         elapsed += (end.tv_nsec - start.tv_nsec) / 1e9;
-        printf("Time elapsed: %.9f seconds\n", elapsed);
+        printf("Step: %d, Loss: %f, ", step, loss/N_TRAIN);
+        printf("Time elapsed: %.6f seconds\n", elapsed);
     }
 
     return w_CD;
