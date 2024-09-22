@@ -104,15 +104,15 @@ float cross_entropy(float *p, long *y, int num) {
     return loss;
 }
 
-float *fit_linear(float *x, long *y) {
+float *fit_linear(float *x_ND, long *y_N) {
 
-    float eta = 0.5/N_TRAIN;
+    float eta = 0.1/N_TRAIN;
 
     // Allocate weight: 10 x (3x32x32)
-    float *w = (float *)malloc(CLASSES*DIM*sizeof(float));
+    float *w_CD = (float *)malloc(CLASSES*DIM*sizeof(float));
     for (int c = 0; c < CLASSES; c++)
         for (int d = 0; d < DIM; d++)
-            w[c*DIM+d] = 0;
+            w_CD[c*DIM+d] = 0;
 
     int steps = 2;
     for (int step = 0; step < steps; step++) {
@@ -121,35 +121,35 @@ float *fit_linear(float *x, long *y) {
         double elapsed;
         clock_gettime(CLOCK_MONOTONIC, &start);
 
-        float *o = forward_linear(x, w, N_TRAIN);
-        float *p = softmax(o, N_TRAIN);
-        float *delta = sub(one_hot(y, N_TRAIN), p, N_TRAIN*CLASSES);
-        float loss = cross_entropy(p, y, N_TRAIN);
+        float *o_NC = forward_linear(x_ND, w_CD, N_TRAIN);
+        float *p_NC = softmax(o_NC, N_TRAIN);
+        float *delta_NC = sub(one_hot(y_N, N_TRAIN), p_NC, N_TRAIN*CLASSES);
+        float loss = cross_entropy(p_NC, y_N, N_TRAIN);
         printf("Step: %d, Loss: %f\n", step, loss/N_TRAIN);
 
-        printf("weight: %f\n", w[0]);
-        /*
-        for (int c = 0; c < 10; c++) {
-            printf("%f  ", delta[c]);
+        printf("weight: %f\n", w_CD[0]);
+        for (int n = 0; n < 3; n++) {
+            for (int c = 0; c < 10; c++) {
+                printf("%f  ", delta_NC[c]);
+            }
         }
         printf("\n");
-        */
 
-        float *u = (float *)malloc(CLASSES*DIM*sizeof(float));
+        float *u_CD = (float *)malloc(CLASSES*DIM*sizeof(float));
         for (int c = 0; c < CLASSES; c++)
             for (int d = 0; d < DIM; d++)
-                u[c*DIM+d] = 0;
+                u_CD[c*DIM+d] = 0;
 
         for (int c = 0; c < CLASSES; c++) {
             for (int d = 0; d < DIM; d++) {
                 for (int n = 0; n < N_TRAIN; n++) {
-                    u[c*DIM+d] += delta[n*CLASSES+c] * x[n*DIM+d];
+                    u_CD[c*DIM+d] += delta_NC[n*CLASSES+c] * x_ND[n*DIM+d];
                 }
             }
         }
         for (int c = 0; c < CLASSES; c++)
             for (int d = 0; d < DIM; d++)
-                w[c*DIM+d] += eta * u[c*DIM+d];
+                w_CD[c*DIM+d] += eta * u_CD[c*DIM+d];
 
         free(o);
         free(p);
