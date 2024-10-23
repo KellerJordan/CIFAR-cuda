@@ -51,8 +51,11 @@ void cpu_to_cuda(float *hM, float *dM, int n) {
 const int BLOCKSIZE = 32;
 
 __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
-    int i = blockIdx.x * BLOCKSIZE + threadIdx.y;
-    int j = blockIdx.y * BLOCKSIZE + threadIdx.x; // so consecutive j will be same warp
+
+    int x = threadIdx.x;
+    int y = threadIdx.y;
+    int i = blockIdx.x * BLOCKSIZE + y;
+    int j = blockIdx.y * BLOCKSIZE + x; // so consecutive j will be same warp
     // for some reason swapping blockIdx.x and blockIdx.y here results in a slight slowdown.
 
     __shared__ float As[32 * 32];
@@ -61,13 +64,13 @@ __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
     float tmp = 0;
     for (int l = 0; l < 4096/32; l++) {
 
-        As[32*threadIdx.y+threadIdx.x] = A[n*i+32*l+threadIdx.x];
-        Bs[32*threadIdx.y+threadIdx.x] = B[n*(32*l+threadIdx.y)+j];
+        As[32*y+x] = A[n*i+32*l+x];
+        Bs[32*y+x] = B[n*(32*l+y)+j];
 
         __syncthreads();
 
         for (int k = 0; k < 32; k++) {
-            tmp += As[32*threadIdx.y+k] * Bs[32*k+threadIdx.x];
+            tmp += As[32*y+k] * Bs[32*k+x];
         }
     }
     C[n*i+j] = tmp;
