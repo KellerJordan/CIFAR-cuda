@@ -48,9 +48,11 @@ void cpu_to_cuda(float *hM, float *dM, int n) {
     }
 }
 
+int BLOCKSIZE = 32;
+
 __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
-    int i = blockIdx.x * 32 + threadIdx.x / 32;
-    int j = blockIdx.y * 32 + threadIdx.x % 32;
+    int i = blockIdx.x * BLOCKSIZE + threadIdx.x / BLOCKSIZE;
+    int j = blockIdx.y * BLOCKSIZE + threadIdx.x % BLOCKSIZE;
     int idx = n * i + j;
 
     float tmp = 0;
@@ -64,8 +66,8 @@ __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
 void perform_matmul(float *dA, float *dB, float *dC, int n) {
 
     cudaError_t err;
-    int threadsPerBlock = 1024;
-    dim3 gridDim(n/32, n/32);
+    int threadsPerBlock = BLOCKSIZE*BLOCKSIZE;
+    dim3 gridDim(n/BLOCKSIZE, n/BLOCKSIZE);
     cuda_matmul<<<gridDim, threadsPerBlock>>>(dA, dB, dC, n);
     err = cudaGetLastError();
     if (err != cudaSuccess) {
