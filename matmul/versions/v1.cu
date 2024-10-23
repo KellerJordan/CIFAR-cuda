@@ -10,7 +10,7 @@ float *cpu_matrix(int n) {
     return M;
 }
 
-float *zero_init(float *M, int n) {
+void zero_init(float *M, int n) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             M[n*i+j] = 0;
