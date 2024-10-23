@@ -53,13 +53,12 @@ int BLOCKSIZE = 32;
 __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
     int i = blockIdx.x * BLOCKSIZE + threadIdx.x / BLOCKSIZE;
     int j = blockIdx.y * BLOCKSIZE + threadIdx.x % BLOCKSIZE;
-    int idx = n * i + j;
 
     float tmp = 0;
     for (int k = 0; k < n; k++) {
         tmp += A[n*i+k] * B[n*k+j];
     }
-    C[idx] = tmp;
+    C[n*i+j] = tmp;
 }
 
 
