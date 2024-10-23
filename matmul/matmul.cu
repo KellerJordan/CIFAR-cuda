@@ -19,6 +19,15 @@ void zero_init(float *M, int n) {
     }
 }
 
+void rand_init(float *M, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            float random_float = (float)rand() / (float)RAND_MAX;
+            M[n*i+j] = random_float;
+        }
+    }
+}
+
 float *cuda_matrix(int n) {
     size_t size = n * n * sizeof(float);
     float *dM;
@@ -110,6 +119,9 @@ int main() {
     hA[777*n+999] = 20;
     hB[999*n+777] = 61;
 
+    rand_init(hA, n);
+    rand_init(hB, n);
+
     float *dA = cuda_matrix(n);
     float *dB = cuda_matrix(n);
     float *dC = cuda_matrix(n);
@@ -119,11 +131,13 @@ int main() {
 
     // -----
 
+    perform_matmul(dA, dB, dC, n); // warmup? doesn't seem to actually reduce variance
+
     struct timespec start, end;
     double elapsed;
     clock_gettime(CLOCK_MONOTONIC, &start);
 
-    int steps = 5;
+    int steps = 10;
     for (int step = 0; step < steps; step++) {
         perform_matmul(dA, dB, dC, n);
     }
