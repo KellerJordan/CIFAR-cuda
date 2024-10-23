@@ -51,23 +51,37 @@ void cpu_to_cuda(float *hM, float *dM, int n) {
 const int BLOCKSIZE = 32;
 
 __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
-    int i = blockIdx.x * BLOCKSIZE + threadIdx.y;
-    int j = blockIdx.y * BLOCKSIZE + threadIdx.x;
+    int i = blockIdx.x * BLOCKSIZE + threadIdx.x / BLOCKSIZE;
+    int j = blockIdx.y * BLOCKSIZE + threadIdx.x % BLOCKSIZE;
 
-    float tmp = 0;
-    for (int k = 0; k < n; k++) {
-        tmp += A[n*i+k] * B[n*k+j];
+    int x = threadIdx.x / BLOCKSIZE;
+    int y = threadIdx.y % BLOCKSIZE;
+
+    __shared__ float As[32 * 32];
+    __shared__ float Bs[32 * 32];
+
+    for (int l = 0; l < 4096/32; l++) {
+
+        As[32*x+y] = A[n*i+32*l+y];
+        Bs[32*x+y] = B[
+
+        __syncthreads();
+
+        float tmp = 0;
+        for (int k = 0; k < n; k++) {
+            tmp += A[n*i+k] * B[n*k+j];
+        }
+        C[n*i+j] = tmp;
     }
-    C[n*i+j] = tmp;
 }
 
 
 void perform_matmul(float *dA, float *dB, float *dC, int n) {
 
     cudaError_t err;
-    dim3 blockDim(BLOCKSIZE, BLOCKSIZE);
+    int threadsPerBlock = BLOCKSIZE*BLOCKSIZE;
     dim3 gridDim(n/BLOCKSIZE, n/BLOCKSIZE);
-    cuda_matmul<<<gridDim, blockDim>>>(dA, dB, dC, n);
+    cuda_matmul<<<gridDim, threadsPerBlock>>>(dA, dB, dC, n);
     err = cudaGetLastError();
     if (err != cudaSuccess) {
         fprintf(stderr, "Failed to launch kernel (error code %s)!\n", cudaGetErrorString(err));
