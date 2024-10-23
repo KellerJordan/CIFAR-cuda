@@ -10,6 +10,14 @@ float *cpu_matrix(int n) {
     return M;
 }
 
+float *zero_init(float *M, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            M[n*i+j] = 0;
+        }
+    }
+}
+
 float *cuda_matrix(int n) {
     size_t size = n * n * sizeof(float);
     float *dM;
@@ -70,6 +78,8 @@ int main() {
 
     float *hA = cpu_matrix(n);
     float *hB = cpu_matrix(n);
+    zero_init(hA, n);
+    zero_init(hB, n);
     hA[0] = 1;
     hA[1] = 3;
     hB[0] = 6;
