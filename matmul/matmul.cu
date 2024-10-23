@@ -48,7 +48,7 @@ void cpu_to_cuda(float *hM, float *dM, int n) {
     }
 }
 
-int BLOCKSIZE = 32;
+const int BLOCKSIZE = 32;
 
 __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
     int i = blockIdx.x * BLOCKSIZE + threadIdx.x / BLOCKSIZE;
