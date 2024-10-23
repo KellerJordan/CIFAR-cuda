@@ -43,11 +43,10 @@ __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
     int i = blockIdx.x * 32 + threadIdx.x / 32;
     int j = blockIdx.y * 32 + threadIdx.x % 32;
     int idx = n*i + j;
-    if (idx < n*n) {
-        C[idx] = 0;
-        for (int k = 0; k < n; k++) {
-            C[idx] += A[n*i+k] * B[n*k+j];
-        }
+
+    C[idx] = 0;
+    for (int k = 0; k < n; k++) {
+        C[idx] += A[n*i+k] * B[n*k+j];
     }
 }
 
