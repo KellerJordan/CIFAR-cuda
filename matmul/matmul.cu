@@ -108,6 +108,9 @@ int main() {
     hB[1] = 5; // shouldn't matter
     hB[n] = 7;
 
+    hA[777*n+999] = 20;
+    hB[999*n+777] = 61;
+
     float *dA = cuda_matrix(n);
     float *dB = cuda_matrix(n);
     float *dC = cuda_matrix(n);
