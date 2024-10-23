@@ -51,12 +51,13 @@ void cpu_to_cuda(float *hM, float *dM, int n) {
 __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
     int i = blockIdx.x * 32 + threadIdx.x / 32;
     int j = blockIdx.y * 32 + threadIdx.x % 32;
-    int idx = n*i + j;
+    int idx = n * i + j;
 
-    C[idx] = 0;
+    float tmp = 0;
     for (int k = 0; k < n; k++) {
-        C[idx] += A[n*i+k] * B[n*k+j];
+        tmp += A[n*i+k] * B[n*k+j];
     }
+    C[idx] = tmp;
 }
 
 
@@ -137,7 +138,7 @@ int main() {
     double elapsed;
     clock_gettime(CLOCK_MONOTONIC, &start);
 
-    int steps = 10;
+    int steps = 100;
     for (int step = 0; step < steps; step++) {
         perform_matmul(dA, dB, dC, n);
     }
