@@ -52,7 +52,7 @@ const int BLOCKSIZE = 32;
 
 __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
     int i = blockIdx.x * BLOCKSIZE + threadIdx.y;
-    int j = blockIdx.y * BLOCKSIZE + threadIdx.x;
+    int j = blockIdx.y * BLOCKSIZE + threadIdx.x; // so consecutive j will be same warp
 
     float tmp = 0;
     for (int k = 0; k < n; k++) {
