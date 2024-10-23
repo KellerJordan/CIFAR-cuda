@@ -1,4 +1,4 @@
-// 0.249 Gflops
+// 1049 Gflops
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>

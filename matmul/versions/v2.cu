@@ -1,4 +1,4 @@
-// 0.249 Gflops
+// 1049 Gflops
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
@@ -140,8 +140,9 @@ int main() {
     elapsed += (end.tv_nsec - start.tv_nsec) / 1e9;
     float per_step = elapsed/steps;
     printf("Time elapsed: %.6f seconds per step\n", per_step);
-    float flops = 2*n*n/per_step;
-    float gflops = flops / 1000000000;
+    double flops = n*2/per_step;
+    flops *= n*n; // split into two steps to avoid casting stuff
+    double gflops = flops / 1000000000;
     printf("Gflops: %.3f\n", gflops);
 
     check_result(dC, n);
