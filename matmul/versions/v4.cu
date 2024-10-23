@@ -1,4 +1,4 @@
-// 3031 Gflops
+// 5291 Gflops
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
@@ -51,29 +51,35 @@ void cpu_to_cuda(float *hM, float *dM, int n) {
 const int BLOCKSIZE = 32;
 
 __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
-    int i0 = blockIdx.x * BLOCKSIZE + 2 * threadIdx.x / 32;
-    int j0 = blockIdx.y * BLOCKSIZE + 2 * threadIdx.x % 32;
+    int i = blockIdx.x * BLOCKSIZE + threadIdx.y;
+    int j = blockIdx.y * BLOCKSIZE + threadIdx.x; // so consecutive j will be same warp
+    // for some reason swapping blockIdx.x and blockIdx.y here results in a slight slowdown.
 
-    for (int i1 = 0; i1 < 2; i1++) {
-        for (int j1 = 0; j1 < 2; j1++) {
-            int i = i0 + i1;
-            int j = j0 + j1;
-            float tmp = 0;
-            for (int k = 0; k < n; k++) {
-                tmp += A[n*i+k] * B[n*k+j];
-            }
-            C[n*i+j] = tmp;
+    __shared__ float As[32 * 32];
+    __shared__ float Bs[32 * 32];
+
+    float tmp = 0;
+    for (int l = 0; l < 4096/32; l++) {
+
+        As[32*threadIdx.y+threadIdx.x] = A[n*i+32*l+threadIdx.x];
+        Bs[32*threadIdx.y+threadIdx.x] = B[n*(32*l+threadIdx.y)+j];
+
+        __syncthreads();
+
+        for (int k = 0; k < 32; k++) {
+            tmp += As[32*threadIdx.y+k] * Bs[32*k+threadIdx.x];
         }
     }
+    C[n*i+j] = tmp;
 }
 
 
 void perform_matmul(float *dA, float *dB, float *dC, int n) {
 
     cudaError_t err;
-    int threadsPerBlock = 32*32;
-    dim3 gridDim(n/64, n/64);
-    cuda_matmul<<<gridDim, threadsPerBlock>>>(dA, dB, dC, n);
+    dim3 blockDim(BLOCKSIZE, BLOCKSIZE);
+    dim3 gridDim(n/BLOCKSIZE, n/BLOCKSIZE);
+    cuda_matmul<<<gridDim, blockDim>>>(dA, dB, dC, n);
     err = cudaGetLastError();
     if (err != cudaSuccess) {
         fprintf(stderr, "Failed to launch kernel (error code %s)!\n", cudaGetErrorString(err));

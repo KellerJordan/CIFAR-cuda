@@ -1,4 +1,4 @@
-// 3031 Gflops
+// 5291 Gflops
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
@@ -53,10 +53,22 @@ const int BLOCKSIZE = 32;
 __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
     int i = blockIdx.x * BLOCKSIZE + threadIdx.y;
     int j = blockIdx.y * BLOCKSIZE + threadIdx.x; // so consecutive j will be same warp
+    // for some reason swapping blockIdx.x and blockIdx.y here results in a slight slowdown.
+
+    __shared__ float As[32 * 32];
+    __shared__ float Bs[32 * 32];
 
     float tmp = 0;
-    for (int k = 0; k < n; k++) {
-        tmp += A[n*i+k] * B[n*k+j];
+    for (int l = 0; l < 4096/32; l++) {
+
+        As[32*threadIdx.y+threadIdx.x] = A[n*i+32*l+threadIdx.x];
+        Bs[32*threadIdx.y+threadIdx.x] = B[n*(32*l+threadIdx.y)+j];
+
+        __syncthreads();
+
+        for (int k = 0; k < 32; k++) {
+            tmp += As[32*threadIdx.y+k] * Bs[32*k+threadIdx.x];
+        }
     }
     C[n*i+j] = tmp;
 }
