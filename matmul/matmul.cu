@@ -39,12 +39,12 @@ void cpu_to_cuda(float *hM, float *dM, int n) {
 }
 
 __global__ void cuda_matmul(float *A, float *B, float *C, int n) {
-    //int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    //int i = idx / n;
-    //int j = idx % n;
-    int i = blockIdx.x * blockDim.x + threadIdx.x / blockDim.x;
-    int j = blockIdx.y * blockDim.y + threadIdx.x / blockDim.y;
-    int idx = n*i + j;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int i = idx / n;
+    int j = idx % n;
+    //int i = blockIdx.x * blockDim.x + threadIdx.x / blockDim.x;
+    //int j = blockIdx.y * blockDim.y + threadIdx.x / blockDim.y;
+    //int idx = n*i + j;
     if (idx < n*n) {
         C[idx] = 0;
         for (int k = 0; k < n; k++) {
@@ -58,28 +58,32 @@ void perform_matmul(float *dA, float *dB, float *dC, int n) {
 
     cudaError_t err;
     int threadsPerBlock = 1024;
-    dim3 gridDim(n/32, n/32, 1);
-    //int blocksPerGrid = n*n/threadsPerBlock;
-    cuda_matmul<<<gridDim, threadsPerBlock>>>(dA, dB, dC, n);
+    //dim3 gridDim(n/32, n/32, 1);
+    //cuda_matmul<<<gridDim, threadsPerBlock>>>(dA, dB, dC, n);
+    int blocksPerGrid = n*n/threadsPerBlock;
+    cuda_matmul<<<blocksPerGrid, threadsPerBlock>>>(dA, dB, dC, n);
     err = cudaGetLastError();
     if (err != cudaSuccess) {
         fprintf(stderr, "Failed to launch kernel (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
     }
 
-    float hC;
-    err = cudaMemcpy(&hC, dC, sizeof(float), cudaMemcpyDeviceToHost);
+    /*
+    float *hC = (float *)malloc(n*n*sizeof(float));
+    err = cudaMemcpy(hC, dC, n*n*sizeof(float), cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) {
         fprintf(stderr, "line 56 Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
     }
-    printf("%f\n", hC);
+    printf("%f\n", hC[0]);
+    printf("%f\n", hC[n]);
+    */
 }
 
 void check_result(float *dC, int n) {
     size_t size = n*n*sizeof(float);
     float *hC = (float *)malloc(size);
-    cudaError_t err = cudaMemcpy(hC, dC, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaError_t err = cudaMemcpy(hC, dC, n*n*sizeof(float), cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) {
         fprintf(stderr, "line 56 Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
@@ -128,6 +132,7 @@ int main() {
     for (int step = 0; step < steps; step++) {
         perform_matmul(dA, dB, dC, n);
     }
+    cudaDeviceSynchronize();
 
     clock_gettime(CLOCK_MONOTONIC, &end);
     elapsed = (end.tv_sec - start.tv_sec);
