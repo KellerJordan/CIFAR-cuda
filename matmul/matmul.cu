@@ -94,7 +94,7 @@ void check_result(float *dC, int n) {
             total += hC[n*i+j];
         }
     }
-    printf("Total: %f\n", total);
+    printf("Total: %f (should be 1252)\n", total);
     free(hC);
 }
 
@@ -128,7 +128,7 @@ int main() {
     double elapsed;
     clock_gettime(CLOCK_MONOTONIC, &start);
 
-    int steps = 10;
+    int steps = 5;
     for (int step = 0; step < steps; step++) {
         perform_matmul(dA, dB, dC, n);
     }
