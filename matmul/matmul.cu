@@ -1,4 +1,4 @@
-// 1049 Gflops
+// 1085 Gflops
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
@@ -119,8 +119,8 @@ int main() {
     hA[777*n+999] = 20;
     hB[999*n+777] = 61;
 
-    rand_init(hA, n);
-    rand_init(hB, n);
+    //rand_init(hA, n);
+    //rand_init(hB, n);
 
     float *dA = cuda_matrix(n);
     float *dB = cuda_matrix(n);
