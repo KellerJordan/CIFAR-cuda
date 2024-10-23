@@ -71,7 +71,10 @@ int main() {
     float *hA = cpu_matrix(n);
     float *hB = cpu_matrix(n);
     hA[0] = 1;
-    hB[0] = 1;
+    hA[1] = 3;
+    hB[0] = 6;
+    hB[1] = 5; // shouldn't matter
+    hB[n] = 7;
 
     float *dA = cuda_matrix(n);
     float *dB = cuda_matrix(n);
